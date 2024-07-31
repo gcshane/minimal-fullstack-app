@@ -19,22 +19,20 @@ collection = db[COLLECTION_NAME]
 # Hardcoded password
 PASSWORD = os.getenv("PASSWORD")
 
-# Create a placeholder for the table
-table_placeholder = st.empty()
-
 # Function to load and display items
 def load_items():
     try:
         items = list(collection.find({"quantity": {"$gt": 0}}, {'_id': 0}))  # Exclude the MongoDB ID field and filter out items with quantity <= 0
         if items:
             df = pd.DataFrame(items)
-            df.set_index('name', inplace=True)  # Set 'name' as the index
-            table_placeholder.write("**Inventory List**")
-            table_placeholder.dataframe(df)  # Display as a table
+            if 'name' in df.columns:
+                df.set_index('name', inplace=True)  # Set 'name' as the index
+            return df
         else:
-            table_placeholder.write("No items found.")
+            return None
     except Exception as e:
         st.error(f"An error occurred: {e}")
+        return None
 
 # Function to show the login page
 def login():
@@ -50,8 +48,7 @@ def login():
 
 # Function to show the main page after login
 def main_page():
-    load_items()
-    
+
     # Inputs for updating or adding items
     st.subheader("Update or Add Item")
     item_name = st.text_input("Item Name")
@@ -80,6 +77,13 @@ def main_page():
                     st.error(f"An error occurred: {e}")
         else:
             st.error("Item name is required")
+    
+    df = load_items()
+    if df is not None:
+        st.write("**Inventory List**")
+        st.dataframe(df)  # Display as a table
+    else:
+        st.write("No items found.")
 
 # Function to handle the logout
 def logout():
